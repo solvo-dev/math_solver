@@ -5,7 +5,7 @@
 	const input = document.getElementById('userInput');
 
 	// Initiale Begrüßung
-	appendMessage('bot', 'Hallo! Ich kann einfache Additionen, Subtraktionen und Multiplikationen lösen. Frage mich z. B.: 3 + 4, 10 - 7, 6 * 5, 3 × 4 oder "5 mal 8".');
+	appendMessage('bot', 'Hallo! Ich kann einfache Additionen, Subtraktionen, Multiplikationen und Divisionen lösen. Frage mich z. B.: 3 + 4, 10 - 7, 6 * 5, 3 × 4, 8 / 2, 9 ÷ 3 oder "12 geteilt durch 4".');
 
 	form.addEventListener('submit', (e) => {
 		e.preventDefault();
@@ -58,17 +58,21 @@
 			.replace(/\bplus\b/g, '+')
 			.replace(/\bminus\b/g, '-')
 			.replace(/\bmal\b/g, '*')
+			.replace(/\bgeteilt\s+durch\b/g, '/')
 			.replace(/\bund\b/g, ' und ')
 			.replace(/\bmit\b/g, ' mit ')
 			.replace(/\bvon\b/g, ' von ')
 			.replace(/[=\?]/g, ' ')
 			.replace(/was ist|wie viel ist|berechne|rechne|bitte|\s+/g, ' ');
 
-		// Multiplikationssymbole vereinheitlichen
+		// Operator-Symbole vereinheitlichen
 		s = s
 			.replace(/[×·]/g, '*')
+			.replace(/[÷:]/g, '/')
 			// Fälle wie 3x4 oder 3×4 -> 3 * 4
 			.replace(/(\d)\s*[x×·]\s*(\d)/g, '$1 * $2')
+			// Fälle wie 3:4 oder 3÷4 -> 3 / 4
+			.replace(/(\d)\s*[/:÷]\s*(\d)/g, '$1 / $2')
 			// alleinstehendes x als Operator
 			.replace(/\bx\b/g, '*');
 
@@ -76,8 +80,8 @@
 		s = s.replace(/(\d),(\d)/g, '$1.$2');
 
 		// Mögliche Formen:
-		// 1) a + b  |  a - b  |  a * b
-		let m = s.match(/(-?\d+(?:\.\d+)?)\s*([+\-*])\s*(-?\d+(?:\.\d+)?)/);
+		// 1) a + b  |  a - b  |  a * b | a / b
+		let m = s.match(/(-?\d+(?:\.\d+)?)\s*([+\-*\/])\s*(-?\d+(?:\.\d+)?)/);
 		if (m) {
 			const a = parseFloat(m[1]);
 			const op = m[2];
@@ -85,7 +89,11 @@
 			let result;
 			if (op === '+') result = a + b;
 			else if (op === '-') result = a - b;
-			else result = a * b;
+			else if (op === '*') result = a * b;
+			else {
+				if (b === 0) return { ok: false, error: 'Division durch 0 ist nicht definiert.' };
+				result = a / b;
+			}
 			return { ok: true, a, b, op, result, usedComma };
 		}
 
@@ -127,6 +135,15 @@
 			const a = parseFloat(m[1]);
 			const b = parseFloat(m[2]);
 			return { ok: true, a, b, op: '*', result: a * b, usedComma };
+		}
+
+		// 7) dividiere/teile a durch b  (a / b)
+		m = s.match(/(?:dividiere|teile)\s+(-?\d+(?:\.\d+)?)\s+durch\s+(-?\d+(?:\.\d+)?)/);
+		if (m) {
+			const a = parseFloat(m[1]);
+			const b = parseFloat(m[2]);
+			if (b === 0) return { ok: false, error: 'Division durch 0 ist nicht definiert.' };
+			return { ok: true, a, b, op: '/', result: a / b, usedComma };
 		}
 
 		return { ok: false, error: 'Ich konnte deine Aufgabe nicht erkennen.' };

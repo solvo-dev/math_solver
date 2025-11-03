@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="de">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Einfacher Mathe-Chatbot</title>
+		<link rel="stylesheet" href="style.css" />
+	</head>
+	<body>
+		<div class="app">
+			<header class="app__header">
+				<h1>Mathe-Chatbot</h1>
+				<p class="subtitle">Ich löse einfache Additionen und Subtraktionen.</p>
+			</header>
+
+			<main class="chat" id="chat">
+				<!-- Nachrichten erscheinen hier -->
+			</main>
+
+			<form class="composer" id="composer" autocomplete="off">
+				<input
+					id="userInput"
+					class="composer__input"
+					type="text"
+					placeholder="Frage mich z. B.: 3 + 4 oder 10 minus 7"
+					aria-label="Eingabe für die Rechenaufgabe"
+					required
+				/>
+				<button class="composer__send" type="submit" title="Senden">Senden</button>
+			</form>
+		</div>
+
+		<script src="scrypt.js"></script>
+	</body>
+	</html>

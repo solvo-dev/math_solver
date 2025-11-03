@@ -5,7 +5,7 @@
 	const input = document.getElementById('userInput');
 
 	// Initiale Begrüßung
-	appendMessage('bot', 'Hallo! Ich kann einfache Additionen und Subtraktionen lösen. Frage mich z. B.: 3 + 4, 10 - 7, oder "5 plus 8".');
+	appendMessage('bot', 'Hallo! Ich kann einfache Additionen, Subtraktionen und Multiplikationen lösen. Frage mich z. B.: 3 + 4, 10 - 7, 6 * 5, 3 × 4 oder "5 mal 8".');
 
 	form.addEventListener('submit', (e) => {
 		e.preventDefault();
@@ -54,24 +54,38 @@
 		// Standardisiere Wörter auf Operatoren
 		s = s
 			.replace(/[–—]/g, '-') // En/Em-Dash
-			.replace(/plus/g, '+')
-			.replace(/minus/g, '-')
-			.replace(/und/g, ' und ')
-			.replace(/von/g, ' von ')
+			// Schlüsselwörter
+			.replace(/\bplus\b/g, '+')
+			.replace(/\bminus\b/g, '-')
+			.replace(/\bmal\b/g, '*')
+			.replace(/\bund\b/g, ' und ')
+			.replace(/\bmit\b/g, ' mit ')
+			.replace(/\bvon\b/g, ' von ')
 			.replace(/[=\?]/g, ' ')
 			.replace(/was ist|wie viel ist|berechne|rechne|bitte|\s+/g, ' ');
+
+		// Multiplikationssymbole vereinheitlichen
+		s = s
+			.replace(/[×·]/g, '*')
+			// Fälle wie 3x4 oder 3×4 -> 3 * 4
+			.replace(/(\d)\s*[x×·]\s*(\d)/g, '$1 * $2')
+			// alleinstehendes x als Operator
+			.replace(/\bx\b/g, '*');
 
 		// Dezimalkomma -> Punkt
 		s = s.replace(/(\d),(\d)/g, '$1.$2');
 
 		// Mögliche Formen:
-		// 1) a + b  |  a - b
-		let m = s.match(/(-?\d+(?:\.\d+)?)\s*([+-])\s*(-?\d+(?:\.\d+)?)/);
+		// 1) a + b  |  a - b  |  a * b
+		let m = s.match(/(-?\d+(?:\.\d+)?)\s*([+\-*])\s*(-?\d+(?:\.\d+)?)/);
 		if (m) {
 			const a = parseFloat(m[1]);
 			const op = m[2];
 			const b = parseFloat(m[3]);
-			const result = op === '+' ? a + b : a - b;
+			let result;
+			if (op === '+') result = a + b;
+			else if (op === '-') result = a - b;
+			else result = a * b;
 			return { ok: true, a, b, op, result, usedComma };
 		}
 
@@ -97,6 +111,22 @@
 			const b = parseFloat(m[1]);
 			const a = parseFloat(m[2]);
 			return { ok: true, a, b, op: '-', result: a - b, usedComma };
+		}
+
+		// 5) multipliziere a und/mit b  (a * b)
+		m = s.match(/multipliziere\s+(-?\d+(?:\.\d+)?)\s+(?:und|mit)\s+(-?\d+(?:\.\d+)?)/);
+		if (m) {
+			const a = parseFloat(m[1]);
+			const b = parseFloat(m[2]);
+			return { ok: true, a, b, op: '*', result: a * b, usedComma };
+		}
+
+		// 6) produkt aus a und b  (a * b)
+		m = s.match(/produkt\s+aus\s+(-?\d+(?:\.\d+)?)\s+und\s+(-?\d+(?:\.\d+)?)/);
+		if (m) {
+			const a = parseFloat(m[1]);
+			const b = parseFloat(m[2]);
+			return { ok: true, a, b, op: '*', result: a * b, usedComma };
 		}
 
 		return { ok: false, error: 'Ich konnte deine Aufgabe nicht erkennen.' };

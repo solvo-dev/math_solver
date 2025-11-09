@@ -3,6 +3,17 @@
 	const chat = document.getElementById('chat');
 	const form = document.getElementById('composer');
 	const input = document.getElementById('userInput');
+	const micBtn = document.getElementById('micBtn');
+	const ttsBtn = document.getElementById('ttsBtn');
+
+	let ttsEnabled = false;
+	if (ttsBtn) {
+		ttsBtn.addEventListener('click', () => {
+			ttsEnabled = !ttsEnabled;
+			ttsBtn.classList.toggle('is-active', ttsEnabled);
+			ttsBtn.setAttribute('aria-pressed', String(ttsEnabled));
+		});
+	}
 
 	// Initiale Begrüßung
 	appendMessage('bot', 'Hallo! Ich kann einfache Additionen, Subtraktionen, Multiplikationen und Divisionen lösen. Frage mich z. B.: 3 + 4, 10 - 7, 6 * 5, 3 × 4, 8 / 2, 9 ÷ 3 oder "12 geteilt durch 4".');
@@ -43,6 +54,70 @@
 		wrap.appendChild(bubble);
 		chat.appendChild(wrap);
 		chat.scrollTop = chat.scrollHeight;
+
+		// Optional: Sprachausgabe für Bot
+		if (role === 'bot' && ttsEnabled && 'speechSynthesis' in window) {
+			try {
+				const u = new SpeechSynthesisUtterance(text);
+				u.lang = 'de-DE';
+				window.speechSynthesis.cancel();
+				window.speechSynthesis.speak(u);
+			} catch (_) { /* ignore */ }
+		}
+	}
+
+	// Spracherkennung (Diktat)
+	const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+	let recognition = null;
+	let listening = false;
+	if (SpeechRecognition && micBtn) {
+		recognition = new SpeechRecognition();
+		recognition.lang = 'de-DE';
+		recognition.interimResults = false;
+		recognition.continuous = false;
+
+		micBtn.addEventListener('click', () => {
+			if (listening) {
+				recognition.stop();
+				return;
+			}
+			try {
+				recognition.start();
+				listening = true;
+				micBtn.classList.add('is-active');
+				micBtn.setAttribute('aria-pressed', 'true');
+			} catch (_) {}
+		});
+
+		recognition.addEventListener('result', (ev) => {
+			let transcript = '';
+			for (let i = ev.resultIndex; i < ev.results.length; i++) {
+				if (ev.results[i].isFinal) transcript += ev.results[i][0].transcript;
+			}
+			transcript = (transcript || '').trim();
+			if (transcript) {
+				input.value = transcript;
+				// automatisch absenden
+				if (typeof form.requestSubmit === 'function') form.requestSubmit();
+				else form.dispatchEvent(new Event('submit', { cancelable: true }));
+			}
+		});
+
+		recognition.addEventListener('end', () => {
+			listening = false;
+			micBtn.classList.remove('is-active');
+			micBtn.setAttribute('aria-pressed', 'false');
+		});
+
+		recognition.addEventListener('error', () => {
+			listening = false;
+			micBtn.classList.remove('is-active');
+			micBtn.setAttribute('aria-pressed', 'false');
+		});
+	} else if (micBtn) {
+		micBtn.addEventListener('click', () => {
+			appendMessage('bot', 'Dein Browser unterstützt Spracherkennung nicht. Nutze Chrome/Edge auf Desktop oder gib den Text ein.');
+		});
 	}
 
 	function solve(text) {

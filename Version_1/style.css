@@ -94,7 +94,7 @@ body {
 
 .composer {
 	display: grid;
-	grid-template-columns: 1fr auto;
+	grid-template-columns: 1fr auto auto auto; /* input, mic, tts, send */
 	gap: 10px;
 	align-items: center;
 }
@@ -129,5 +129,21 @@ body {
 	outline: 2px solid var(--accent-2);
 	outline-offset: 2px;
 }
+
+.composer__mic,
+.composer__tts {
+	padding: 10px 12px;
+	border-radius: 12px;
+	border: 1px solid #1f2a44;
+	background: #0b1220;
+	color: var(--text);
+	cursor: pointer;
+}
+.composer__mic:hover, .composer__tts:hover { filter: brightness(1.05); }
+.composer__mic:focus-visible, .composer__tts:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+.is-active { box-shadow: 0 0 0 2px #22c55e80 inset; }
 
 .small { font-size: 12px; color: var(--muted); }

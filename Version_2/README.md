@@ -1,38 +1,34 @@
-# Version_2 LLM Chatbot (Python)
+# Version_2 LLM Chatbot (Python, Ollama)
 
-Ein minimaler, gut strukturierter Chat-Client für ein Large Language Model (z. B. GPT-5) unter Verwendung der `openai`-Bibliothek.
+Ein minimaler, gut strukturierter Chat-Client für ein lokal laufendes Large Language Model über die Ollama-HTTP-API.
 
 ## 1. Funktionsbeschreibung
 
 Das Programm stellt eine einfache Chat-Schleife zur Verfügung:
 - Liest Benutzereingaben aus dem Terminal.
-- Sendet den bisherigen Dialog-Verlauf als Nachrichtenliste an die OpenAI API.
+- Sendet den bisherigen Dialog-Verlauf als Nachrichtenliste an die lokale Ollama-Instanz.
 - Erhält eine Antwort vom Modell und zeigt sie an.
 - Beendet sich bei Eingaben wie `exit`, `quit` oder leerer Zeile.
 
-Es kapselt die API-Kommunikation in einer Klasse `LLMChatClient`, damit die Logik leicht erweiterbar ist (z. B. Logging, Caching, Conversation IDs).
+Die Klasse `LLMChatClient` kapselt die Kommunikation, so dass du leicht erweitern kannst (Logging, Streaming, Caching, Systemprompt-Anpassung).
 
 ## 2. Dateien
 
 - `chatbot.py` – Python-Chatclient (Terminal)
-- `.env.example` – Beispiel für Umgebungsvariablen
-- `requirements.txt` – Abhängigkeiten (openai, python-dotenv)
+- `.env.example` – Beispiel für Umgebungsvariablen (Host, Modell, Timeout)
+- `requirements.txt` – Abhängigkeiten (`requests`, `python-dotenv`)
 
-## 3. API-Key Verwaltung (.env)
+## 3. Umgebungsvariablen (.env)
 
-1. Erstelle eine Datei `.env` im gleichen Ordner wie `chatbot.py`.
-2. Füge darin deinen API-Key ein:
+Erstelle eine Datei `.env` neben `chatbot.py` und passe Werte an:
 
 ```
-OPENAI_API_KEY=sk-xxxx...
-MODEL=gpt-5
+OLLAMA_HOST=http://127.0.0.1:11434
+MODEL=llama3.1
 REQUEST_TIMEOUT=30
 ```
 
-3. Füge `.env` in deine `.gitignore` ein (oder nutze sie projektweit), damit der Schlüssel nicht ins Git-Repository gelangt.
-4. Lade niemals echte Keys in öffentliche Repos oder Screenshots hoch.
-5. Für Deployment (Server / CI) setze die Umgebungsvariablen direkt im Hosting-Panel (z. B. Azure, AWS, Render) statt eine `.env` hochzuladen.
-6. Rotierte Keys regelmäßig und nutze ggf. separate Keys für Entwicklung und Produktion.
+Kein API-Key notwendig, da Ollama lokal läuft. Für Remote-/Container-Setups kannst du den Host anpassen.
 
 ## 4. Installation & Start (Windows PowerShell)
 
@@ -48,8 +44,13 @@ python -m venv .venv
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# .env nach Vorlage anlegen und OPENAI_API_KEY eintragen
-# (Datei .env neben chatbot.py erstellen)
+# Ollama installieren (falls nicht vorhanden)
+# Siehe: https://ollama.com/download
+# Modell laden (Beispiel llama3.1)
+ollama pull llama3.1
+
+# .env nach Vorlage anlegen/anpassen
+Copy-Item .env.example .env
 
 # Chatbot starten
 python chatbot.py
@@ -59,16 +60,23 @@ Beispielinteraktion:
 
 ```
 Du: Hallo, was kannst du?
-Assistent: Ich kann dir bei Fragen helfen und Informationen bereitstellen.
-Du: Erkläre mir kurz den Unterschied zwischen Liste und Tuple in Python.
+Assistent: Ich helfe dir gerne bei Fragen rund um Programmierung.
+Du: Erkläre Unterschied zwischen Liste und Tuple in Python.
 Assistent: ...
 ```
 
 Beenden mit `exit` oder `quit`.
 
-## 5. Erweiterungs-Ideen
-- Automatisches Logging der Gespräche in einer Datei
-- Tokenzählung / Kostenabschätzung
-- Mehrere Rollen (Systemprompt dynamisch anpassbar)
-- Streaming-Ausgabe für längere Antworten
-- Caching letzter Antworten
+## 5. Fehlerbehebung
+- Fehlermeldung "Verbindungsfehler": Prüfe ob Ollama Dienst läuft (`ollama list`).
+- HTTP 404: Falscher Host oder Modellname nicht gepullt.
+- Sehr langsame Antworten: Timeout erhöhen (`REQUEST_TIMEOUT=60`).
+
+## 6. Erweiterungs-Ideen
+- Logging der Dialoge in einer Datei
+- Streaming-Ausgabe (Teilantworten) für lange Antworten
+- Systemprompt dynamisch ändern im Lauf
+- Mehrere getrennte Sitzungen / Profile
+- Einfache Web- oder GUI-Oberfläche
+
+Viel Spaß beim lokalen Ausprobieren!

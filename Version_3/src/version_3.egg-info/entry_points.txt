@@ -1,0 +1,2 @@
+[console_scripts]
+math-solver = math_solver.main:main

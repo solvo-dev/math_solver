@@ -9,7 +9,7 @@ from dataclasses import dataclass
 @dataclass
 class ChatConfig:
     """Configuration for the chat session."""
-    model_name: str = os.getenv("MODEL_NAME", "gemma3:1b")
+    model_name: str = os.getenv("MODEL_NAME", "smollm2:360m")
     ollama_base_url: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     temperature: float = float(os.getenv("TEMPERATURE", "0.2"))
     max_tokens: int = int(os.getenv("MAX_TOKENS", "2048"))

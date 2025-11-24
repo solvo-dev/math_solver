@@ -20,14 +20,14 @@ class ConfigService:
         config = self.chatbot_service.get_config()
 
         config_info = f"""
-**Model Settings:**
-- Model: {config.model_name}
+**Model-Einstellungen:**
+- Modell: {config.model_name}
 - Ollama URL: {config.ollama_base_url}
-- Temperature: {config.temperature}
+- Temperatur: {config.temperature}
 - Max Tokens: {config.max_tokens}
 
-**Privacy Settings:**
-- Telemetry Disabled: {config.disable_telemetry}
+**Datenschutzeinstellungen:**
+- Telemetrie deaktiviert: {config.disable_telemetry}
 - Do Not Track: {config.do_not_track}
 """
         return config_info

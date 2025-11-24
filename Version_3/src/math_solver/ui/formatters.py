@@ -33,8 +33,8 @@ class MessageFormatter:
         formatted_messages = []
         for user_msg, assistant_msg in history:
             if user_msg:
-                formatted_messages.append(f"**You:** {user_msg}")
+                formatted_messages.append(f"**Du:** {user_msg}")
             if assistant_msg:
-                formatted_messages.append(f"**Assistant:** {assistant_msg}")
+                formatted_messages.append(f"**Assistent:** {assistant_msg}")
 
         return "\n\n".join(formatted_messages)

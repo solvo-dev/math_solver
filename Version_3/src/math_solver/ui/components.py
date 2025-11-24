@@ -24,13 +24,14 @@ class UIComponents:
             """Wrapper for message handling."""
             return await self.message_handler.handle_message(message, history)
 
-        with gr.Blocks(title="Math Solver", theme=gr.themes.Soft()) as interface:
-            gr.Markdown("# 🧮 Math Solver")
-            gr.Markdown("*Ask me to solve math problems*")
+        with gr.Blocks(title="Mathe-Löser", theme=gr.themes.Soft()) as interface:
+            gr.Markdown("# 🧮 Mathe-Löser")
+            gr.Markdown("*Stelle mir mathematische Aufgaben oder Fragen — ich antworte auf Deutsch.*")
 
             with gr.Row():
                 with gr.Column(scale=2):
-                    # Chat interface
+                    # Chat interface (auf Deutsch)
+                    # Note: gr.ChatInterface does not accept placeholder/submit_text kwargs
                     gr.ChatInterface(
                         fn=handle_message,
                         theme=gr.themes.Soft()
@@ -38,11 +39,11 @@ class UIComponents:
 
                 with gr.Column(scale=1):
                     # Configuration display
-                    gr.Markdown("### Current Settings")
+                    gr.Markdown("### Aktuelle Einstellungen")
                     config_display = gr.Markdown(value=self.config_service.get_config_display())
 
                     # Refresh button
-                    refresh_btn = gr.Button("🔄 Refresh Settings", size="sm")
+                    refresh_btn = gr.Button("🔄 Einstellungen aktualisieren", size="sm")
 
             # Update config display when refresh is clicked
             refresh_btn.click(

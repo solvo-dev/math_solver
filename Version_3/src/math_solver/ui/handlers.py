@@ -27,7 +27,31 @@ class MessageHandler:
         """
         if not message.strip():
             return ""
+        # Check if this message is a user-provided correction.
+        # Expected simple format: 'Korrektur: <fehlerauszug> => <korrekte Lösung und ggf. Erklärung>'
+        lowered = message.strip()
+        if lowered.startswith("korrektur:") or lowered.startswith("korrigiere:"):
+            chatbot = self.chatbot_service.get_chatbot()
+            try:
+                # Remove the leading marker and store the correction
+                payload = message.split(':', 1)[1].strip()
+                # Allow '=>' separator between mistake and correction
+                if '=>' in payload:
+                    pattern, correction = payload.split('=>', 1)
+                    pattern = pattern.strip()
+                    correction = correction.strip()
+                else:
+                    # If no separator, store whole payload as correction note
+                    pattern = None
+                    correction = payload
 
+                chatbot.add_correction(pattern=pattern, correction=correction)
+                return "Danke — ich habe die Korrektur gelernt und werde sie bei passenden Aufgaben berücksichtigen."
+            except Exception as e:
+                logger.exception("Fehler beim Speichern der Korrektur")
+                return f"Fehler beim Speichern der Korrektur: {e}"
+
+        # Normaler Nachrichtenfluss
         chatbot = self.chatbot_service.get_chatbot()
 
         # Collect full response

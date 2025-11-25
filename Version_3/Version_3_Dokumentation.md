@@ -72,6 +72,13 @@ Hinweis zur Sprache:
 - Die Anwendung startet standardmäßig auf Deutsch. Dies wird über die Konfiguration `ChatConfig.language` gesteuert (Standard: `de`).
 - Wenn du die Sprache ändern möchtest, setze die Umgebungsvariable `LANGUAGE`, z.B.: `set LANGUAGE=en` unter Windows PowerShell vor dem Start.
 
+Korrekturen und Lernen vom Nutzer:
+- Du kannst dem Chatbot Korrekturen beibringen, indem du im Chat eine Nachricht mit dem Präfix `Korrektur:` oder `Korrigiere:` sendest.
+- Format: `Korrektur: <fehlerauszug> => <korrekte Lösung und ggf. Erklärung>`
+   - Beispiel: `Korrektur: Deine Ableitung von x^2 war falsch => Ableitung von x^2 ist 2*x`.
+- Der Bot speichert gelernte Korrekturen in `math_corrections.json` im aktuellen Arbeitsverzeichnis und wird sie bei passenden zukünftigen Aufgaben berücksichtigen.
+- Hinweise: Korrekturen mit einem spezifischen Muster (`<fehlerauszug>`) werden automatisch angewendet, wenn das Muster in einer Eingabe oder einem Tool-Ergebnis auftaucht. Allgemeine Korrekturen ohne Muster werden gespeichert, aber nicht automatisch angewendet.
+
 ## Verwendung
 
 - Öffne die Weboberfläche.

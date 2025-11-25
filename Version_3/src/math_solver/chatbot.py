@@ -14,6 +14,8 @@ from math_solver.models import ChatMessage
 from math_solver.ollama_client import OllamaClient
 from math_solver.tool_detector import is_basic_arithmetic, should_use_sympy, detect_basic_arithmetic, detect_math_expression
 from math_solver.tools import ArithmeticTool, SymPyTool, NumericTool, MathTool
+import json
+from pathlib import Path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -54,6 +56,10 @@ class MathTutorChatbot:
 
         self.conversation: List[ChatMessage] = []
         self._system_prompt = self._build_system_prompt()
+        # Load persisted corrections (user-taught fixes)
+        self.corrections_file = Path.cwd() / "math_corrections.json"
+        self.corrections: List[Dict[str, str]] = []
+        self._load_corrections()
 
     async def close(self):
         """Close the Ollama client and clean up resources."""
@@ -112,6 +118,53 @@ Remember: Your goal is to help students solve math problems effectively."""
         """Add a message to the conversation history."""
         message = ChatMessage(role=role, content=content, **kwargs)
         self.conversation.append(message)
+
+    # --- Correction memory API ---
+    def _load_corrections(self) -> None:
+        try:
+            if self.corrections_file.exists():
+                with self.corrections_file.open("r", encoding="utf-8") as f:
+                    self.corrections = json.load(f)
+        except Exception:
+            # If loading fails, start with empty corrections
+            self.corrections = []
+
+    def _save_corrections(self) -> None:
+        try:
+            with self.corrections_file.open("w", encoding="utf-8") as f:
+                json.dump(self.corrections, f, ensure_ascii=False, indent=2)
+        except Exception:
+            logger.exception("Fehler beim Speichern der Korrekturen")
+
+    def add_correction(self, pattern: Optional[str], correction: str, explanation: Optional[str] = None) -> None:
+        """Store a user-provided correction.
+
+        - pattern: optional short text or excerpt that identifies when the correction applies
+        - correction: the corrected solution/explanation
+        - explanation: optional meta-info
+        """
+        entry = {
+            "pattern": pattern if pattern else "",
+            "correction": correction,
+            "explanation": explanation or "",
+        }
+        # Prepend so recent corrections have priority
+        self.corrections.insert(0, entry)
+        self._save_corrections()
+
+    def find_applicable_correction(self, text: str) -> Optional[Dict[str, str]]:
+        """Return the first correction whose pattern is contained in text (if pattern present)."""
+        for c in self.corrections:
+            pat = c.get("pattern", "")
+            if not pat:
+                # generic correction without pattern applies to many cases; skip automatic application
+                continue
+            try:
+                if pat.lower() in text.lower():
+                    return c
+            except Exception:
+                continue
+        return None
 
     def clear_conversation(self) -> None:
         """Clear the conversation history but keep the system prompt."""
@@ -205,7 +258,16 @@ Remember: Your goal is to help students solve math problems effectively."""
                 expr = detect_math_expression(user_input)
 
             if expr:
-                return await tool.execute(expr)
+                result = await tool.execute(expr)
+                # If a user correction applies to this input or the tool result, prefer annotated correction
+                applicable = self.find_applicable_correction(user_input) or self.find_applicable_correction(result or "")
+                if applicable:
+                    # Return correction text but include original tool result for traceability
+                    corr_text = applicable.get("correction", "")
+                    combined = f"[Korrektur angewendet] {corr_text}\n\n[Original Ergebnis:]\n{result}"
+                    return combined
+
+                return result
 
         except Exception as e:
             logger.warning(f"Tool execution failed ({tool_name}): {e}")

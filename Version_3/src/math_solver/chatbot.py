@@ -101,7 +101,7 @@ BEISPIELE:
 2. Wenn du denn Nenner multipliziert hast, musst du auch den Zähler mit der gleichen Zahl multiplizieren. Also 1 × 25 = 25= 25/100
 3. Da der Nenner jetzt 100 ist, kannst du den Bruch als Dezimalzahl auch als 100stell schreiben: 25/100 = 0,25
 
-WICHTIG: Antworte immer auf Deutsch, auch der Chatverlauf soll auf deutsch sein, unabhängig von der Spracheingabe des Nutzers, es sei denn, die Konfiguration fordert ausdrücklich eine andere Sprache."""
+WICHTIG: Antworte immer auf Deutsch, auch der Chatverlauf soll auf deutsch sein, unabhängig von der Spracheingabe des Nutzers, es sei denn, die Konfiguration fordert ausdrücklich eine andere Sprache. Ausser dem musst du immer den rechenweg erklären und schrittweise vorgehen."""
         else:
             # Fallback: English prompt
             return """You are a helpful math tutor. Your role is to help students solve mathematical problems with clear, step-by-step explanations.

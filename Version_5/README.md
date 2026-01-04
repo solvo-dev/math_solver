@@ -1,19 +1,28 @@
-# Version 5 – UI-Demo
+# Version 5 – MathQA UI + Klassifizierer
 
-Gradio-basierte Chat-Oberfläche, die die Optik aus Version 4 nachbildet, jedoch ohne angebundene LLM-/Tool-Logik.
+Gradio-Chatoberfläche mit MathQA-Klassifizierung (Logistic Regression + SentenceTransformer). Kein LLM eingebunden.
 
-## Starten
-1. Abhängigkeiten installieren:
-   ```bash
-   pip install -r requirements.txt
-   ```
-2. App starten:
-   ```bash
-   python main.py
-   ```
-3. Öffne den angezeigten Link (Standard: http://127.0.0.1:7860).
+## Setup (uv empfohlen)
+```bash
+uv sync
+```
+
+## Klassifizierer trainieren (MathQA)
+```bash
+uv run python train_classifier.py \
+  --dataset ../Version_4/MathQA/train.json \
+  --sample-size 5000 \
+  --output models/classifier
+```
+- Artefakte landen unter `models/classifier` (clf.joblib, embedding_model.joblib, label_map.json, metrics.json).
+- Passe `--device cuda` an, falls GPU verfügbar.
+
+## App starten
+```bash
+uv run python main.py
+```
+Öffne den Link (Standard: http://127.0.0.1:7860). Die Chatnachrichten werden klassifiziert; Badge erscheint vor der Antwort.
 
 ## Hinweise
-- Die Oberfläche zeigt statische Platzhalterantworten und synthetische Badges, um das Erscheinungsbild aus Version 4 zu demonstrieren.
-- Das rechte Panel zeigt Demo-Einstellungen; der Aktualisieren-Button erneuert lediglich den Zeitstempel.
-- Spätere Integration von Modell- oder Tool-Logik kann direkt an `MessageHandler.handle_message` erfolgen.
+- Falls der Klassifizierer nicht gefunden wird, zeigt das Seitenpanel einen Hinweis „nicht gefunden — bitte zuerst trainieren“.
+- Die Antworten sind statisch (Echo + Badge); die Klassifizierung stammt aus den trainierten Artefakten.

@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+src/service/classifier_service.py
+src/utility/train_classifier.py
+src/version_5.egg-info/PKG-INFO
+src/version_5.egg-info/SOURCES.txt
+src/version_5.egg-info/dependency_links.txt
+src/version_5.egg-info/requires.txt
+src/version_5.egg-info/top_level.txt
+tests/test_classifier_service.py

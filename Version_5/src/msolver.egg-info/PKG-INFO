@@ -1,0 +1,43 @@
+Metadata-Version: 2.4
+Name: msolver
+Version: 0.1.0
+Summary: Add your description here
+Requires-Python: >=3.13
+Description-Content-Type: text/markdown
+Requires-Dist: gradio>=6.2.0
+Requires-Dist: sentence-transformers>=2.7.0
+Requires-Dist: scikit-learn>=1.5.0
+Requires-Dist: datasets>=2.19.0
+Requires-Dist: joblib>=1.3.0
+Requires-Dist: numpy>=1.26.0
+Requires-Dist: torch>=2.2.0
+Requires-Dist: pytest>=9.0.2
+
+# Version 5 – MathQA UI + Klassifizierer
+
+Gradio-Chatoberfläche mit MathQA-Klassifizierung (Logistic Regression + SentenceTransformer). Kein LLM eingebunden.
+
+## Setup (uv empfohlen)
+```bash
+uv sync
+```
+
+## Klassifizierer trainieren (MathQA)
+```bash
+uv run python train_classifier.py \
+  --dataset ../Version_4/MathQA/train.json \
+  --sample-size 5000 \
+  --output models/classifier
+```
+- Artefakte landen unter `models/classifier` (clf.joblib, embedding_model.joblib, label_map.json, metrics.json).
+- Passe `--device cuda` an, falls GPU verfügbar.
+
+## App starten
+```bash
+uv run python main.py
+```
+Öffne den Link (Standard: http://127.0.0.1:7860). Die Chatnachrichten werden klassifiziert; Badge erscheint vor der Antwort.
+
+## Hinweise
+- Falls der Klassifizierer nicht gefunden wird, zeigt das Seitenpanel einen Hinweis „nicht gefunden — bitte zuerst trainieren“.
+- Die Antworten sind statisch (Echo + Badge); die Klassifizierung stammt aus den trainierten Artefakten.

@@ -1,0 +1,49 @@
+"""Demo script showing how to find similar questions from the test set.
+
+Example:
+    python demo_similar_questions.py
+"""
+
+from pathlib import Path
+from service.classifier_service import ClassifierService
+
+
+def main() -> None:
+    # Load trained classifier
+    model_dir = Path("version_5/models/classifier")
+    print(f"Loading classifier from {model_dir}...")
+    svc = ClassifierService.from_pretrained(model_dir)
+    
+    # Load test set for similarity search
+    test_path = Path("version_5/models/data/train-00000-of-00001.parquet")
+    print(f"\nLoading test set from {test_path}...")
+    svc.load_test_set(test_path, max_samples=3000)  # Limit for demo purposes
+    
+    # Example queries
+    queries = [
+        "Was ist der Umfang eines Kreises mit Radius 5?",
+        "Berechne die Fläche eines Dreiecks mit Basis 10 und Höhe 8",
+        "Wenn ein Zug mit 60 Meilen pro Stunde für 3 Stunden fährt, wie weit kommt er?",
+    ]
+    
+    print("\n" + "="*80)
+    print("FINDING SIMILAR QUESTIONS")
+    print("="*80)
+    
+    for query in queries:
+        print(f"\nQuery: {query}")
+        print("-" * 80)
+        
+        # Find top 3 similar questions
+        similar = svc.find_similar(query, top_k=3)
+        
+        for i, result in enumerate(similar, 1):
+            print(f"\n{i}. Similarity: {result['similarity']:.4f}")
+            print(f"   Category: {result['category']}")
+            print(f"   Problem: {result['problem'][:150]}...")
+        
+        print()
+
+
+if __name__ == "__main__":
+    main()

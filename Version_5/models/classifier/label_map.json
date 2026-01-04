@@ -1,0 +1,8 @@
+{
+  "gain": 0,
+  "general": 1,
+  "geometry": 2,
+  "other": 3,
+  "physics": 4,
+  "probability": 5
+}

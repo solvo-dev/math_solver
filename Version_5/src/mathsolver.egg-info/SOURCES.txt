@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+src/mathsolver.egg-info/PKG-INFO
+src/mathsolver.egg-info/SOURCES.txt
+src/mathsolver.egg-info/dependency_links.txt
+src/mathsolver.egg-info/requires.txt
+src/mathsolver.egg-info/top_level.txt
+src/service/classifier_service.py
+src/utility/train_classifier.py
+tests/test_classifier_service.py

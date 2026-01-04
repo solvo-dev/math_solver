@@ -286,16 +286,20 @@ Remember: Your goal is to help students solve math problems effectively."""
 
         Yields dicts with 'type': 'chunk'|'tool_call'|'tool_result' and content.
         """
+        # Store classifier result for integration into response
+        classifier_info = None
+        
         # Optionally run classifier first (if enabled)
         if self.classifier_service:
             try:
                 classified = self.classifier_service.classify(user_input)
-                # Only yield classifier tool result if above threshold
+                # Only use classifier result if above threshold
                 if classified and float(classified.get("confidence", 0.0)) >= float(self.config.classifier_confidence_threshold):
-                    # yield a tool_result for classifier
-                    yield {"type": "tool_result", "content": f"Category: {classified.get('category')} (confidence: {classified.get('confidence'):.2f})", "tool": "classifier"}
-                    # Add to conversation for context
-                    self.add_message("assistant", f"[Classifier] Category: {classified.get('category')} (confidence: {classified.get('confidence'):.2f})")
+                    classifier_info = classified
+                    # Add classifier result as a system message for context
+                    category = classified.get('category', 'unknown')
+                    confidence = float(classified.get('confidence', 0.0))
+                    self.add_message("system", f"[Klassifikation] Die Frage wurde als '{category}' erkannt (Konfidenz: {confidence:.2f})")
             except Exception:
                 # swallow classifier errors to avoid interrupting the chat flow
                 logger.debug("Classifier failed to run for input: %s", user_input)

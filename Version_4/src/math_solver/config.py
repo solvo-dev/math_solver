@@ -18,6 +18,6 @@ class ChatConfig:
     # Default language for the UI and assistant responses. Use ISO language codes, e.g. 'de' for German.
     language: str = os.getenv("LANGUAGE", "de")
     # Classifier options (opt-in to keep behavior non-invasive)
-    enable_classifier: bool = os.getenv("ENABLE_CLASSIFIER", "false").lower() == "true"
+    enable_classifier: bool = True#os.getenv("ENABLE_CLASSIFIER", "false").lower() == "true"
     classifier_model_path: str = os.getenv("CLASSIFIER_MODEL_PATH", "models/classifier")
     classifier_confidence_threshold: float = float(os.getenv("CLASSIFIER_CONFIDENCE_THRESHOLD", "0.5"))

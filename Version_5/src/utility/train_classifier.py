@@ -14,7 +14,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--dataset",
         type=Path,
-        default=Path("models/data/train-00000-of-00001.parquet"),
+        default=Path("models/data/train-00000-of-00001.json"),
         help="Path to training dataset (JSON or Parquet format)",
     )
     p.add_argument("--sample-size", type=int, default=5000, help="Limit number of samples")

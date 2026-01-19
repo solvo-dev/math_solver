@@ -15,15 +15,14 @@ def main() -> None:
     svc = ClassifierService.from_pretrained(model_dir)
     
     # Load test set for similarity search
-    test_path = Path("version_5/models/data/train-00000-of-00001.parquet")
+    test_path = Path("version_5/models/data/train-00000-of-00001.json")
     print(f"\nLoading test set from {test_path}...")
     svc.load_test_set(test_path, max_samples=3000)  # Limit for demo purposes
     
     # Example queries
     queries = [
-        "Was ist der Umfang eines Kreises mit Radius 5?",
-        "Berechne die Fläche eines Dreiecks mit Basis 10 und Höhe 8",
-        "Wenn ein Zug mit 60 Meilen pro Stunde für 3 Stunden fährt, wie weit kommt er?",
+        "Wen 20 Bauarbeiter 50 Stunden brauchen um ein Haus zu bauen, wie lange brauchen 10 Bauarbeiter?",
+        "Wen 22 Mninenarbeiter 47 Stunden brauchen um ein Tunnel zu bauen, wie lange brauchen 5 Minnenarbeiter?"
     ]
     
     print("\n" + "="*80)

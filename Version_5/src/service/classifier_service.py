@@ -36,6 +36,7 @@ class ClassifierService:
         # For similarity search
         self._test_embeddings: Optional[np.ndarray] = None
         self._test_questions: Optional[List[Dict[str, Any]]] = None
+        self._raw_data: Optional[List[Dict[str, Any]]] = None
 
     @classmethod
     def from_pretrained(cls, model_dir: Path, device: str = "cpu") -> "ClassifierService":
@@ -152,7 +153,14 @@ class ClassifierService:
             else:
                 raise RuntimeError("Embedding model not loaded; train or load first.")
         
-        texts, labels = self._load_mathqa_json(test_path, max_samples or 999999)
+        # Load raw data with all fields
+        with open(test_path, "r", encoding="utf-8") as f:
+            self._raw_data = json.load(f)
+            if max_samples:
+                self._raw_data = self._raw_data[:max_samples]
+        
+        texts = [item.get("Problem", "") for item in self._raw_data]
+        labels = [item.get("category", "unknown") or "unknown" for item in self._raw_data]
         
         logger.info(f"Encoding {len(texts)} test questions for similarity search...")
         self._test_embeddings = self._emb_model.encode(texts, show_progress_bar=True)
@@ -184,10 +192,16 @@ class ClassifierService:
         
         results = []
         for idx in top_indices:
-            results.append({
+            result = {
                 **self._test_questions[idx],
                 "similarity": float(similarities[idx])
-            })
+            }
+            # Add additional fields from raw data if available
+            if self._raw_data and idx < len(self._raw_data):
+                raw_item = self._raw_data[idx]
+                result["rationale"] = raw_item.get("Rationale", "")
+                result["correct"] = raw_item.get("correct", "")
+            results.append(result)
         
         return results
 

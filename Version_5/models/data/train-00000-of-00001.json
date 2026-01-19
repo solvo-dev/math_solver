@@ -1,0 +1,38 @@
+[
+    {
+    "Problem":"Wen 20 Bauarbeiter 50 Stunden brauchen um ein Haus zu bauen, wie lange brauchen 10 Bauarbeiter?",
+    "Rationale":"Ein Bauarbeiter brauch 20 mal länger um das Haus selbstständig zu bauen, also 20 mal 50 Stunden = 1000 Stunden. 10 Bauarbeiter brauchen dann 1000 geteilt durch 10 = 100 Stunden.",
+    "options":"",
+    "correct":"100 Stunden",
+    "annotated_formula":"",
+    "linear_formula":"",
+    "category":"Textaufgabe"
+  },
+{
+    "Problem":"Der Heuvorrat reicht für 16 Kühe 21 Tage. Wie lange reicht der Heuvorrat für 14 Kühe?",
+    "Rationale":"Zuerst berechnen wir die Gesamtmenge des Heus in Kuh-Tagen: 16 Kühe * 21 Tage = 336 Kuh-Tage. Dann teilen wir diese Menge durch die Anzahl der Kühe, um die Anzahl der Tage zu erhalten: 336 Kuh-Tage Geteilt 14 Kühe = 24 Tage.",
+    "options":"",
+    "correct":"24 Tage",
+    "annotated_formula":"",
+    "linear_formula":"",
+    "category":"Textaufgabe"
+  },
+  {
+    "Problem":"Was ist 5/4 als Dezimalzahl?",
+    "Rationale":"Um 5/4 als Dezimalzahl auszudrücken, teilen wir 5 durch 4. 5 geteilt durch 4 ergibt 1,25.",
+    "options":"",
+    "correct":"1,25",
+    "annotated_formula":"",
+    "linear_formula":"",
+    "category":"Textaufgabe"
+  },
+  {
+    "Problem":"Was ist 4/5+6/7?",
+    "Rationale":"Um 4/5 und 6/7 zu addieren, bringen wir sie auf einen gemeinsamen Nenner. Der kleinste gemeinsame Nenner von 5 und 7 ist 35. 4/5 wird zu 28/35 und 6/7 wird zu 30/35. Dann addieren wir die Zähler: 28 + 30 = 58. Das Ergebnis ist 58/35, was als Dezimalzahl ungefähr 1,657 ergibt.",
+    "options":"",
+    "correct":"58/35 oder ungefähr 1,657",
+    "annotated_formula":"",
+    "linear_formula":"",
+    "category":"Textaufgabe"
+  }
+]

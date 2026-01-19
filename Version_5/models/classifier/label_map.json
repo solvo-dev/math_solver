@@ -1,8 +1,9 @@
 {
-  "gain": 0,
-  "general": 1,
-  "geometry": 2,
-  "other": 3,
-  "physics": 4,
-  "probability": 5
+  "Textaufgabe": 0,
+  "gain": 1,
+  "general": 2,
+  "geometry": 3,
+  "other": 4,
+  "physics": 5,
+  "probability": 6
 }

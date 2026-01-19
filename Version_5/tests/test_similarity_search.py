@@ -13,7 +13,7 @@ def model_dir():
 @pytest.fixture
 def test_data_path():
     """Fixture providing the path to the test dataset."""
-    return Path(__file__).resolve().parent.parent / "models" / "data" / "train-00000-of-00001.parquet"
+    return Path(__file__).resolve().parent.parent / "models" / "data" / "train-00000-of-00001.json"
 
 
 def test_similarity_search(model_dir, test_data_path):

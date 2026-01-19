@@ -3,22 +3,35 @@
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
 from typing import List
 
 import gradio as gr
 
+from service.classifier_service import ClassifierService
 
-# -- Minimal helpers --
-def format_badges() -> str:
-    """Return small placeholder badges to mimic Version 4 look."""
-    return (
-        "\n\n🏷️ **Kategorie erkannt:** 📊 **Beispiel-Kategorie** (Konfidenz: 0.50)\n\n"
-        "\n\n💡 **[INFO]** Dies ist ein Platzhalter-Hinweis.\n\n"
-    )
+
+# -- Initialize classifier --
+MODEL_DIR = Path(__file__).parent.parent / "models" / "classifier"
+TEST_DATA_PATH = Path(__file__).parent.parent / "models" / "data" / "train-00000-of-00001.json"
+classifier = None
+
+try:
+    classifier = ClassifierService.from_pretrained(MODEL_DIR)
+    print(f"✓ Classifier loaded from {MODEL_DIR}")
+    
+    # Load test set for similarity search
+    if TEST_DATA_PATH.exists():
+        classifier.load_test_set(TEST_DATA_PATH, max_samples=1000)
+        print(f"✓ Test set loaded for similarity search")
+    else:
+        print(f"⚠ Test data not found at {TEST_DATA_PATH}")
+except Exception as e:
+    print(f"⚠ Classifier could not be loaded: {e}")
 
 
 def handle_message(message: str, history: List[List[str]]) -> str:
-    """Echo-style handler with static badges; no model calls."""
+    """Handler that finds similar problems from test set."""
     if not message.strip():
         return ""
 
@@ -26,26 +39,48 @@ def handle_message(message: str, history: List[List[str]]) -> str:
     if lowered.startswith("korrektur:") or lowered.startswith("korrigiere:"):
         return "Danke — Korrektur notiert (nur Demo, keine Speicherung)."
 
+    similar_info = ""
+    
+    if classifier:
+        try:
+            # Find most similar question (top_k=1)
+            similar = classifier.find_similar(message, top_k=1)
+            if similar:
+                most_similar = similar[0]
+                similar_info = f"**🔍 Ähnlichstes Problem (Ähnlichkeit: {most_similar['similarity']*100:.2f}%):**\n\n"
+                similar_info += f"**Problem:**\n{most_similar['problem']}\n\n"
+                similar_info += f"**Kategorie:** {most_similar['category']}\n\n"
+                
+                # Add Rationale if available
+                if most_similar.get('rationale'):
+                    similar_info += f"**Rationale:**\n{most_similar['rationale']}\n\n"
+                
+                # Add correct answer if available
+                if most_similar.get('correct'):
+                    similar_info += f"**Korrekte Antwort:** {most_similar['correct']}\n\n"
+        except Exception as e:
+            similar_info = f"\n\n⚠️ Ähnlichkeitssuche-Fehler: {e}\n\n"
+
     return (
-        format_badges()
-        + "Dies ist eine UI-Demonstration ohne angebundenes Modell. "
-        "Gib beliebige mathematische Aufgaben ein; die Antworten bleiben statisch.\n\n"
-        + f"**Echo:** {message}"
+        similar_info
+        + f"\n**Deine Eingabe:** {message}"
     )
 
 
 def config_markdown() -> str:
     """Static config panel text with timestamp."""
     refreshed = datetime.now().strftime("%H:%M:%S")
+    similar_status = "✓ Aktiviert" if (classifier and classifier._test_embeddings is not None) else "✗ Nicht verfügbar"
+    
     return f"""
 **Modell-Einstellungen:**
-- Modus: UI-Demo (kein Modell verbunden)
+- Modus: Ähnlichkeitssuche
+- Ähnlichkeitssuche: {similar_status}
 - Antwortsprache: Deutsch
-- Streaming: deaktiviert
 
 **Hinweis:**
-- Diese Version zeigt nur die Oberfläche ohne LLM-Logik.
-- Badges sind statisch.
+- Diese Version findet ähnliche Probleme aus dem Testdatensatz.
+- Die ähnlichsten Probleme werden mit Ähnlichkeitswert angezeigt.
 - Zuletzt aktualisiert: {refreshed}
 """
 

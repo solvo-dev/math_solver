@@ -9,6 +9,7 @@ from typing import List
 import gradio as gr
 
 from service.classifier_service import ClassifierService
+from service.ollama_service import OllamaService
 
 
 # -- Initialize classifier --
@@ -16,6 +17,7 @@ MODEL_DIR = Path(__file__).parent.parent / "models" / "classifier"
 TEST_DATA_PATH = Path(__file__).parent.parent / "models" / "data" / "train-00000-of-00001.json"
 PROMPT_TEMPLATE_PATH = Path(__file__).parent.parent / "models" / "math_solver_prompt_v1.md"
 classifier = None
+ollama_service = None
 
 try:
     classifier = ClassifierService.from_pretrained(MODEL_DIR)
@@ -31,61 +33,102 @@ except Exception as e:
     print(f"⚠ Classifier could not be loaded: {e}")
 
 
+# -- Initialize Ollama service --
+try:
+    ollama_service = OllamaService(
+        base_url="http://localhost:11434",
+        model="gemma3:1b",
+        prompt_template_path=PROMPT_TEMPLATE_PATH,
+    )
+    print(f"✓ Ollama service initialized (model: gemma3:1b)")
+except Exception as e:
+    print(f"⚠ Ollama service could not be initialized: {e}")
+
+
 def handle_message(message: str, history: List[List[str]]) -> str:
-    """Handler that creates a prompt based on similar problems from test set."""
+    """Handler that creates a prompt and uses Ollama to solve."""
     if not message.strip():
         return ""
 
     lowered = message.strip().lower()
     if lowered.startswith("korrektur:") or lowered.startswith("korrigiere:"):
         return "Danke — Korrektur notiert (nur Demo, keine Speicherung)."
-
-    # Load prompt template
-    try:
-        with open(PROMPT_TEMPLATE_PATH, 'r', encoding='utf-8') as f:
-            prompt_template = f.read()
-    except Exception as e:
-        return f"⚠️ Fehler beim Laden des Prompt-Templates: {e}"
     
-    if classifier:
-        try:
-            # Find most similar question (top_k=1)
-            similar = classifier.find_similar(message, top_k=1)
-            if similar:
-                most_similar = similar[0]
+    if not classifier:
+        return "⚠️ Classifier nicht verfügbar."
+    
+    try:
+        # Find most similar question (top_k=1)
+        similar = classifier.find_similar(message, top_k=1)
+        if not similar:
+            return f"⚠️ Keine ähnlichen Probleme gefunden.\n\n**Deine Eingabe:** {message}"
+        
+        most_similar = similar[0]
+        similarity_info = f"**🔍 Ähnlichkeit zum Beispiel: {most_similar['similarity']*100:.2f}%**\n\n"
+        
+        # If Ollama is available, use it to solve
+        if ollama_service:
+            try:
+                response = ollama_service.solve_math_problem(
+                    user_input=message,
+                    problem=most_similar['problem'],
+                    rationale=most_similar.get('rationale', 'Keine Rationale verfügbar'),
+                    correct=most_similar.get('correct', 'Keine Antwort verfügbar'),
+                    temperature=0.7,
+                    num_predict=500,
+                )
+                return similarity_info + "---\n\n" + response
+            except Exception as e:
+                # Fallback: show prompt without Ollama solution
+                with open(PROMPT_TEMPLATE_PATH, 'r', encoding='utf-8') as f:
+                    template = f.read()
                 
-                # Replace placeholders in template
-                filled_prompt = prompt_template.replace("{Problem}", most_similar['problem'])
+                filled_prompt = template.replace("{Problem}", most_similar['problem'])
                 filled_prompt = filled_prompt.replace("{rational}", most_similar.get('rationale', 'Keine Rationale verfügbar'))
                 filled_prompt = filled_prompt.replace("{correct}", most_similar.get('correct', 'Keine Antwort verfügbar'))
                 filled_prompt = filled_prompt.replace("{input}", message)
                 
-                # Add similarity info at the top
-                similarity_info = f"**🔍 Ähnlichkeit zum Beispiel: {most_similar['similarity']*100:.2f}%**\n\n---\n\n"
-                
-                return similarity_info + filled_prompt
-            else:
-                return f"⚠️ Keine ähnlichen Probleme gefunden.\n\n**Deine Eingabe:** {message}"
-        except Exception as e:
-            return f"⚠️ Ähnlichkeitssuche-Fehler: {e}\n\n**Deine Eingabe:** {message}"
+                return (
+                    similarity_info + 
+                    f"⚠️ Ollama nicht verfügbar: {e}\n\n---\n\n" +
+                    f"**Erstellter Prompt (ohne Ollama-Lösung):**\n\n{filled_prompt}"
+                )
+        else:
+            # Fallback: show prompt without Ollama
+            with open(PROMPT_TEMPLATE_PATH, 'r', encoding='utf-8') as f:
+                template = f.read()
+            
+            filled_prompt = template.replace("{Problem}", most_similar['problem'])
+            filled_prompt = filled_prompt.replace("{rational}", most_similar.get('rationale', 'Keine Rationale verfügbar'))
+            filled_prompt = filled_prompt.replace("{correct}", most_similar.get('correct', 'Keine Antwort verfügbar'))
+            filled_prompt = filled_prompt.replace("{input}", message)
+            
+            return (
+                similarity_info + 
+                "⚠️ Ollama Service nicht konfiguriert.\n\n---\n\n" +
+                f"**Erstellter Prompt:**\n\n{filled_prompt}"
+            )
     
-    return f"⚠️ Classifier nicht verfügbar.\n\n**Deine Eingabe:** {message}"
+    except Exception as e:
+        return f"⚠️ Fehler: {e}"
 
 
 def config_markdown() -> str:
     """Static config panel text with timestamp."""
     refreshed = datetime.now().strftime("%H:%M:%S")
     similar_status = "✓ Aktiviert" if (classifier and classifier._test_embeddings is not None) else "✗ Nicht verfügbar"
+    ollama_status = "✓ Verbunden" if ollama_service else "✗ Nicht verfügbar"
     
     return f"""
 **Modell-Einstellungen:**
-- Modus: Ähnlichkeitssuche
 - Ähnlichkeitssuche: {similar_status}
+- Ollama Service: {ollama_status}
 - Antwortsprache: Deutsch
 
 **Hinweis:**
-- Diese Version findet ähnliche Probleme aus dem Testdatensatz.
-- Die ähnlichsten Probleme werden mit Ähnlichkeitswert angezeigt.
+- Die App findet ähnliche Probleme aus dem Testdatensatz.
+- Der Prompt wird mit den ähnlichsten Beispielen gefüllt.
+- Wenn Ollama verfügbar ist, wird eine Lösung generiert.
 - Zuletzt aktualisiert: {refreshed}
 """
 

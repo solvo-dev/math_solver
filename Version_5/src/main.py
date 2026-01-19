@@ -14,6 +14,7 @@ from service.classifier_service import ClassifierService
 # -- Initialize classifier --
 MODEL_DIR = Path(__file__).parent.parent / "models" / "classifier"
 TEST_DATA_PATH = Path(__file__).parent.parent / "models" / "data" / "train-00000-of-00001.json"
+PROMPT_TEMPLATE_PATH = Path(__file__).parent.parent / "models" / "math_solver_prompt_v1.md"
 classifier = None
 
 try:
@@ -31,7 +32,7 @@ except Exception as e:
 
 
 def handle_message(message: str, history: List[List[str]]) -> str:
-    """Handler that finds similar problems from test set."""
+    """Handler that creates a prompt based on similar problems from test set."""
     if not message.strip():
         return ""
 
@@ -39,7 +40,12 @@ def handle_message(message: str, history: List[List[str]]) -> str:
     if lowered.startswith("korrektur:") or lowered.startswith("korrigiere:"):
         return "Danke — Korrektur notiert (nur Demo, keine Speicherung)."
 
-    similar_info = ""
+    # Load prompt template
+    try:
+        with open(PROMPT_TEMPLATE_PATH, 'r', encoding='utf-8') as f:
+            prompt_template = f.read()
+    except Exception as e:
+        return f"⚠️ Fehler beim Laden des Prompt-Templates: {e}"
     
     if classifier:
         try:
@@ -47,24 +53,23 @@ def handle_message(message: str, history: List[List[str]]) -> str:
             similar = classifier.find_similar(message, top_k=1)
             if similar:
                 most_similar = similar[0]
-                similar_info = f"**🔍 Ähnlichstes Problem (Ähnlichkeit: {most_similar['similarity']*100:.2f}%):**\n\n"
-                similar_info += f"**Problem:**\n{most_similar['problem']}\n\n"
-                similar_info += f"**Kategorie:** {most_similar['category']}\n\n"
                 
-                # Add Rationale if available
-                if most_similar.get('rationale'):
-                    similar_info += f"**Rationale:**\n{most_similar['rationale']}\n\n"
+                # Replace placeholders in template
+                filled_prompt = prompt_template.replace("{Problem}", most_similar['problem'])
+                filled_prompt = filled_prompt.replace("{rational}", most_similar.get('rationale', 'Keine Rationale verfügbar'))
+                filled_prompt = filled_prompt.replace("{correct}", most_similar.get('correct', 'Keine Antwort verfügbar'))
+                filled_prompt = filled_prompt.replace("{input}", message)
                 
-                # Add correct answer if available
-                if most_similar.get('correct'):
-                    similar_info += f"**Korrekte Antwort:** {most_similar['correct']}\n\n"
+                # Add similarity info at the top
+                similarity_info = f"**🔍 Ähnlichkeit zum Beispiel: {most_similar['similarity']*100:.2f}%**\n\n---\n\n"
+                
+                return similarity_info + filled_prompt
+            else:
+                return f"⚠️ Keine ähnlichen Probleme gefunden.\n\n**Deine Eingabe:** {message}"
         except Exception as e:
-            similar_info = f"\n\n⚠️ Ähnlichkeitssuche-Fehler: {e}\n\n"
-
-    return (
-        similar_info
-        + f"\n**Deine Eingabe:** {message}"
-    )
+            return f"⚠️ Ähnlichkeitssuche-Fehler: {e}\n\n**Deine Eingabe:** {message}"
+    
+    return f"⚠️ Classifier nicht verfügbar.\n\n**Deine Eingabe:** {message}"
 
 
 def config_markdown() -> str:

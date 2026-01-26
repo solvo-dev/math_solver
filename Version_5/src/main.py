@@ -12,6 +12,13 @@ from service.classifier_service import ClassifierService
 from service.ollama_service import OllamaService
 
 
+# Allow both inline ($...$) and block ($$...$$) LaTeX rendering
+LATEX_DELIMITERS = [
+    {"left": "$$", "right": "$$", "display": True},
+    {"left": "$", "right": "$", "display": False},
+]
+
+
 # -- Initialize classifier --
 MODEL_DIR = Path(__file__).parent.parent / "models" / "classifier"
 TEST_DATA_PATH = Path(__file__).parent.parent / "models" / "data" / "train-00000-of-00001.json"
@@ -37,10 +44,10 @@ except Exception as e:
 try:
     ollama_service = OllamaService(
         base_url="http://localhost:11434",
-        model="gemma3:1b",
+        model="qwen3:0.6b",
         prompt_template_path=PROMPT_TEMPLATE_PATH,
     )
-    print(f"✓ Ollama service initialized (model: gemma3:1b)")
+    print(f"✓ Ollama service initialized (model: qwen3:0.6b)")
 except Exception as e:
     print(f"⚠ Ollama service could not be initialized: {e}")
 
@@ -136,17 +143,18 @@ def config_markdown() -> str:
 def build_interface() -> gr.Blocks:
     """Minimal two-column layout similar to Version 4."""
     with gr.Blocks(title="Mathe-Löser UI-Demo", theme=gr.themes.Soft()) as demo:
-        gr.Markdown("# 🧮 Mathe-Löser – UI-Demo")
+        gr.Markdown("# 🧮 Mathe-Löser – UI-Demo", latex_delimiters=LATEX_DELIMITERS)
         gr.Markdown(
             "*Stelle mir mathematische Aufgaben oder Fragen — die Oberfläche reagiert, "
-            "aber es ist kein Modell angebunden.*"
+            "aber es ist kein Modell angebunden.*",
+            latex_delimiters=LATEX_DELIMITERS,
         )
 
         with gr.Row():
             with gr.Column(scale=2):
                 gr.ChatInterface(
                     fn=handle_message,
-                    chatbot=gr.Chatbot(height=420),
+                    chatbot=gr.Chatbot(height=420, latex_delimiters=LATEX_DELIMITERS),
                     textbox=gr.Textbox(
                         placeholder="Frage auf Deutsch stellen…",
                         label="Deine Frage",
@@ -161,7 +169,7 @@ def build_interface() -> gr.Blocks:
 
             with gr.Column(scale=1):
                 gr.Markdown("### Aktuelle Einstellungen")
-                config_display = gr.Markdown(value=config_markdown())
+                config_display = gr.Markdown(value=config_markdown(), latex_delimiters=LATEX_DELIMITERS)
                 refresh_btn = gr.Button("🔄 Einstellungen aktualisieren", size="sm")
 
         refresh_btn.click(fn=config_markdown, outputs=config_display)

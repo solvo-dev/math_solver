@@ -11,6 +11,7 @@ import tkinter as tk
 
 from service.classifier_service import ClassifierService
 from service.ollama_service import OllamaService
+from service.groq_service import GroqService
 
 
 # Allow both inline ($...$) and block ($$...$$) LaTeX rendering
@@ -26,6 +27,7 @@ TEST_DATA_PATH = Path(__file__).parent.parent / "models" / "data" / "train-00000
 PROMPT_TEMPLATE_PATH = Path(__file__).parent.parent / "models" / "math_solver_prompt_v1.md"
 classifier = None
 ollama_service = None
+groq_service = None
 
 try:
     classifier = ClassifierService.from_pretrained(MODEL_DIR)
@@ -53,8 +55,20 @@ except Exception as e:
     print(f"⚠ Ollama service could not be initialized: {e}")
 
 
-def handle_message(message: str, history: List[List[str]]) -> str:
-    """Handler that creates a prompt and uses Ollama to solve."""
+# -- Initialize Groq service --
+try:
+    groq_service = GroqService(
+        api_key="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",
+        model="llama-3.3-70b-versatile",
+        prompt_template_path=PROMPT_TEMPLATE_PATH,
+    )
+    print("✓ Groq service initialized (model: llama-3.3-70b-versatile)")
+except Exception as e:
+    print(f"⚠ Groq service could not be initialized: {e}")
+
+
+def handle_message(message: str, history: List[List[str]], backend: str) -> str:
+    """Handler that creates a prompt and uses the selected backend to solve."""
     if not message.strip():
         return ""
 
@@ -72,10 +86,16 @@ def handle_message(message: str, history: List[List[str]]) -> str:
             return f"⚠️ Keine ähnlichen Probleme gefunden.\n\n**Deine Eingabe:** {message}"
         
         most_similar = similar[0]
-        # similarity_info = f"**🔍 Ähnlichkeit zum Beispiel: {most_similar['similarity']*100:.2f}%**\n\n"
-        
-        # If Ollama is available, use it to solve
-        if ollama_service:
+        similarity_info = f"**🔍 Ähnlichkeit zum Beispiel: {most_similar['similarity']*100:.2f}%**\n\n"
+
+        if backend == "Ollama":
+            if not ollama_service:
+                return (
+                    similarity_info
+                    + "⚠️ Ollama Service nicht konfiguriert.\n\n"
+                    + "Bitte konfiguriere den Ollama Service, um eine Lösung zu erhalten."
+                )
+
             try:
                 response = ollama_service.solve_math_problem(
                     user_input=message,
@@ -87,35 +107,38 @@ def handle_message(message: str, history: List[List[str]]) -> str:
                 )
                 return response
             except Exception as e:
-                # Fallback: show prompt without Ollama solution
-                with open(PROMPT_TEMPLATE_PATH, 'r', encoding='utf-8') as f:
-                    template = f.read()
-                
-                filled_prompt = template.replace("{Problem}", most_similar['problem'])
-                filled_prompt = filled_prompt.replace("{rational}", most_similar.get('rationale', 'Keine Rationale verfügbar'))
-                filled_prompt = filled_prompt.replace("{correct}", most_similar.get('correct', 'Keine Antwort verfügbar'))
-                filled_prompt = filled_prompt.replace("{input}", message)
-                
                 return (
-                    similarity_info + 
-                    f"⚠️ Ollama nicht verfügbar: {e}\n\n---\n\n" +
-                    f"**Erstellter Prompt (ohne Ollama-Lösung):**\n\n{filled_prompt}"
+                    similarity_info
+                    + f"⚠️ Ollama nicht verfügbar: {e}\n\n"
+                    + "Bitte versuche es später erneut oder prüfe die Ollama-Konfiguration."
                 )
-        else:
-            # Fallback: show prompt without Ollama
-            with open(PROMPT_TEMPLATE_PATH, 'r', encoding='utf-8') as f:
-                template = f.read()
-            
-            filled_prompt = template.replace("{Problem}", most_similar['problem'])
-            filled_prompt = filled_prompt.replace("{rational}", most_similar.get('rationale', 'Keine Rationale verfügbar'))
-            filled_prompt = filled_prompt.replace("{correct}", most_similar.get('correct', 'Keine Antwort verfügbar'))
-            filled_prompt = filled_prompt.replace("{input}", message)
-            
-            return (
-                similarity_info + 
-                "⚠️ Ollama Service nicht konfiguriert.\n\n---\n\n" +
-                f"**Erstellter Prompt:**\n\n{filled_prompt}"
-            )
+
+        if backend == "Groq":
+            if not groq_service:
+                return (
+                    similarity_info
+                    + "⚠️ Groq Service nicht konfiguriert.\n\n"
+                    + "Bitte setze den GROQ_API_KEY oder konfiguriere den Groq Service."
+                )
+
+            try:
+                response = groq_service.solve_math_problem(
+                    user_input=message,
+                    problem=most_similar['problem'],
+                    rationale=most_similar.get('rationale', 'Keine Rationale verfügbar'),
+                    correct=most_similar.get('correct', 'Keine Antwort verfügbar'),
+                    temperature=0.7,
+                    max_tokens=500,
+                )
+                return response
+            except Exception as e:
+                return (
+                    similarity_info
+                    + f"⚠️ Groq nicht verfügbar: {e}\n\n"
+                    + "Bitte versuche es später erneut oder prüfe die API-Konfiguration."
+                )
+
+        return "⚠️ Unbekannter Backend-Typ."
     
     except Exception as e:
         return f"⚠️ Fehler: {e}"
@@ -126,11 +149,13 @@ def config_markdown() -> str:
     refreshed = datetime.now().strftime("%H:%M:%S")
     similar_status = "✓ Aktiviert" if (classifier and classifier._test_embeddings is not None) else "✗ Nicht verfügbar"
     ollama_status = "✓ Verbunden" if ollama_service else "✗ Nicht verfügbar"
+    groq_status = "✓ Verbunden" if groq_service else "✗ Nicht verfügbar"
     
     return f"""
 **Modell-Einstellungen:**
 - Ähnlichkeitssuche: {similar_status}
 - Ollama Service: {ollama_status}
+- Groq Service: {groq_status}
 - Antwortsprache: Deutsch
 
 **Hinweis:**
@@ -153,20 +178,47 @@ def build_interface() -> gr.Blocks:
 
         with gr.Row():
             with gr.Column(scale=2):
-                gr.ChatInterface(
-                    fn=handle_message,
-                    chatbot=gr.Chatbot(height=420, latex_delimiters=LATEX_DELIMITERS),
-                    textbox=gr.Textbox(
-                        placeholder="Frage auf Deutsch stellen…",
-                        label="Deine Frage",
-                    ),
-                    submit_btn="Senden",
+                backend_selector = gr.Radio(
+                    choices=["Ollama", "Groq"],
+                    value="Ollama",
+                    label="Backend auswählen",
+                )
+
+                chatbot = gr.Chatbot(height=420, latex_delimiters=LATEX_DELIMITERS, value=[])
+                textbox = gr.Textbox(
+                    placeholder="Frage auf Deutsch stellen…",
+                    label="Deine Frage",
+                )
+                submit_btn = gr.Button("Senden")
+                
+                gr.Examples(
                     examples=[
                         "Löse 3x + 7 = 22",
                         "Berechne die Ableitung von x^2 + 3x",
                         "Fläche eines Kreises mit Radius 5",
                     ],
+                    inputs=[textbox],
                 )
+
+                def chat_handler(message: str, backend: str, history):
+                    if not message.strip():
+                        return history if history else []
+                    
+                    if history is None:
+                        history = []
+                    else:
+                        history = list(history)  # Ensure it's a list
+                    
+                    response = handle_message(message, history, backend)
+                    history.append({"role": "user", "content": message})
+                    history.append({"role": "assistant", "content": response})
+                    return history
+
+                submit_btn.click(
+                    fn=chat_handler,
+                    inputs=[textbox, backend_selector, chatbot],
+                    outputs=[chatbot],
+                ).then(lambda: "", inputs=None, outputs=textbox)
 
             with gr.Column(scale=1):
                 gr.Markdown("### Aktuelle Einstellungen")

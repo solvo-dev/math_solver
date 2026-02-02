@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import List
 
 import gradio as gr
+import tkinter as tk
 
 from service.classifier_service import ClassifierService
 from service.ollama_service import OllamaService
@@ -71,7 +72,7 @@ def handle_message(message: str, history: List[List[str]]) -> str:
             return f"⚠️ Keine ähnlichen Probleme gefunden.\n\n**Deine Eingabe:** {message}"
         
         most_similar = similar[0]
-        similarity_info = f"**🔍 Ähnlichkeit zum Beispiel: {most_similar['similarity']*100:.2f}%**\n\n"
+        # similarity_info = f"**🔍 Ähnlichkeit zum Beispiel: {most_similar['similarity']*100:.2f}%**\n\n"
         
         # If Ollama is available, use it to solve
         if ollama_service:
@@ -84,7 +85,7 @@ def handle_message(message: str, history: List[List[str]]) -> str:
                     temperature=0.7,
                     num_predict=500,
                 )
-                return similarity_info + "---\n\n" + response
+                return response
             except Exception as e:
                 # Fallback: show prompt without Ollama solution
                 with open(PROMPT_TEMPLATE_PATH, 'r', encoding='utf-8') as f:
@@ -175,6 +176,15 @@ def build_interface() -> gr.Blocks:
         refresh_btn.click(fn=config_markdown, outputs=config_display)
 
     return demo
+
+
+# Increase the size of the input window
+input_window = tk.Tk()
+input_window.geometry('3840x2000')  # Larger default size (even more height)
+try:
+    input_window.state('zoomed')  # Maximize on launch where supported (e.g., Windows)
+except tk.TclError:
+    pass
 
 
 if __name__ == "__main__":

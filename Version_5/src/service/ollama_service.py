@@ -152,10 +152,10 @@ class OllamaService:
             solution = self.solve(prompt, **kwargs)
             
             # Combine prompt and solution
-            response = f"**Erstellter Prompt:**\n\n{prompt}\n\n"
-            response += f"---\n\n**Lösung vom LLM:**\n\n{solution}"
+            # response = f"**Erstellter Prompt:**\n\n{prompt}\n\n"
+            # response += f"---\n\n**Lösung vom LLM:**\n\n{solution}"
             
-            return response
+            return solution
         
         except Exception as e:
             return f"⚠️ Fehler bei der Problemlösung: {e}"

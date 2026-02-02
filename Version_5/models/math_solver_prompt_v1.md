@@ -3,7 +3,7 @@ Du bist ein mathematischer Problemlöser. Löse die folgende Aufgabe Schritt fü
 ## Beispiel einer gelösten Aufgabe:
 
 **Aufgabe:** 
-{problem}
+{Problem}
 
 **Lösungsweg:**
 {rational}
